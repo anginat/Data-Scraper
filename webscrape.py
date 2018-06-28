@@ -89,7 +89,7 @@ try:
 		return web_scraper(data, range(4))
 	
 	# Main Driver function
-	def main():
+	if __name__ == '__main__':
 		
 		manager = multiprocessing.Manager()
 		results = manager.list()
@@ -132,7 +132,7 @@ try:
 		'''
 		
 		file_path = 'C:/Users/Alpha/Desktop/'+product_link[0]+'.json'
-		create_JSON_file(file_path, results.copy())
+		create_JSON_file(file_path, results)
 		#print(data[0]["data"]["results"]["products"][0]["bestPrice"]["price"]["discounted"])
 		print("********************* Execution Successfully Finished *************************")
 		print("Execution time: "+str(time.clock() - start)+" seconds")
@@ -145,8 +145,8 @@ try:
 		print("Copied to clipboard")
 		#print(format(json_data)[0]["data"]["results"]["products"][0]["bestPrice"]["price"]["discounted"])
 	
-	if __name__ == '__main__':
-		main()
+	
+		#main()
 		
 except Exception as e:
 	print("Exception occurred: "+str(e))
