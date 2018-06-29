@@ -29,6 +29,7 @@ try:
 		with open(file_path, 'w+') as outfile:
 			print("File object opened for: "+file_path)
 			print("Data writing started at: "+file_path)
+			#json_data = json.JSONEncoder().encode(data)
 			json.dump(data, outfile)
 		#file.write(str(data))
 			print("Data writing finished at: "+file_path)
@@ -43,7 +44,7 @@ try:
 			pbar = tqdm.tqdm(total=100)
 			loop_start_time = time.clock()
 			# specify the url
-			webpage_link = "https://www.myntra.com/web/v2/search/data/"+product_link+"?f=&p="+str(i+1)+"&rows=48"
+			webpage_link = "https://www.myntra.com/web/v2/search/data/"+product_link+"?f=&p="+str(i+1)+"&rows=20"
 			print("Web page link created: "+str(webpage_link))
 			logger.info("Web page link created: "+str(webpage_link))
 			# query the website and return the html to the variable ‘webpage’
@@ -92,7 +93,7 @@ try:
 	if __name__ == '__main__':
 		
 		manager = multiprocessing.Manager()
-		results = manager.list()
+		result = manager.list()
 		processes = []
 		cpus = multiprocessing.cpu_count()
 		
@@ -103,7 +104,7 @@ try:
 		end_index = (product_loop_limit[0] // cpus) + 1
 		
 		for cpu in range(cpus):
-			process = multiprocessing.Process(target=web_scraper, args=(results, product_link[0], start_index, end_index))
+			process = multiprocessing.Process(target=web_scraper, args=(result, product_link[0], start_index, end_index))
 			process.start()
 			print("Process Name - "+format(process.name))
 			processes.append(process)
@@ -118,8 +119,8 @@ try:
 			process.join()
 		
 		#web_scraper(product_link[0], 0, 2)
-		print("Length of products is ----------------> "+format(len(results[0]["data"]["results"]["products"])))
-		print("Length of products is ----------------> "+format(len(results[1]["data"]["results"]["products"])))
+		print("Length of products is ----------------> "+format(len(result[0]["data"]["results"]["products"])))
+		print("Length of products is ----------------> "+format(len(result[1]["data"]["results"]["products"])))
 		'''
 		pool = ThreadPool(4)
 		data = {}
@@ -130,6 +131,7 @@ try:
 		data = {}
 		results = web_scraper(data)
 		'''
+		results = [x for x in result] # converts ListProxy into pure python list
 		
 		file_path = 'C:/Users/Alpha/Desktop/'+product_link[0]+'.json'
 		create_JSON_file(file_path, results)
@@ -140,9 +142,9 @@ try:
 		f = open("C:/Users/Alpha/Desktop/"+product_link[0]+".json", "r")
 		f_data = f.read()
 		json_data = json.loads(f_data)
-		df = pandas.DataFrame([json_data])
-		df.to_clipboard(index=False,header=False)
-		print("Copied to clipboard")
+		#df = pandas.DataFrame([json_data])
+		#df.to_clipboard(index=False,header=False)
+		#print("Copied to clipboard")
 		#print(format(json_data)[0]["data"]["results"]["products"][0]["bestPrice"]["price"]["discounted"])
 	
 	
