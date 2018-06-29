@@ -19,24 +19,18 @@ logger=logging.getLogger()
 #Setting the threshold of logger to DEBUG
 logger.setLevel(logging.DEBUG)
 
-try:
-	# Global object "data" to store JSON data
-	#data = {}
-	
+try:	
 	# Utility function to create new JSON file locally
 	def create_JSON_file(file_path, data):
 		#file = open(file_path, 'w+', encoding="utf-8")
 		with open(file_path, 'w+') as outfile:
 			print("File object opened for: "+file_path)
 			print("Data writing started at: "+file_path)
-			#json_data = json.JSONEncoder().encode(data)
 			json.dump(data, outfile)
-		#file.write(str(data))
 			print("Data writing finished at: "+file_path)
-		#file.close()
 			print("File object closed for: "+file_path)
 		
-	# Web Scraper funtion to scrape data for defined webpage link
+	# Web Scraper function to scrape data for defined webpage link
 	def web_scraper(data, product_link, start_index, end_index):
 		for i in range(start_index, end_index):
 			print("-------------------------------------------------------------------------------")
@@ -47,30 +41,36 @@ try:
 			webpage_link = "https://www.myntra.com/web/v2/search/data/"+product_link+"?f=&p="+str(i+1)+"&rows=20"
 			print("Web page link created: "+str(webpage_link))
 			logger.info("Web page link created: "+str(webpage_link))
-			# query the website and return the html to the variable ‘webpage’
 			#webpage = urllib.request.urlopen(webpage_link)
 			#proxies = {'http': 'http://103.14.232.30:8080'}
 			req = Request(webpage_link, headers={'User-Agent': 'Mozilla/5.0'})
 			#req.set_proxy('182.75.71.178:8080', 'http')
+			# query the website and return the JSON to the object "response_webpage"
 			response_webpage = urlopen(req).read().decode('utf-8')
+			# JSON parsing
 			response_webpage = json.loads(response_webpage)
+			# "products" object created to update "bestPrices" later into it
 			products = response_webpage["data"]["results"]["products"]
 			print("Products JSON created for page: "+str(i+1))
 			logger.info("Products JSON created for page: "+str(i+1))
+			# checks if products are available in the "response_webpage" object or not
 			if products:
 				#print("Products added to list for page: "+str(i+1))
 				#logger.info("Products added to list for page: "+str(i+1))
 				#pbar2 = tqdm.tqdm(total=len(products))
 				#data.update(response_webpage)
+				# iterate through all the products to update "bestPrices" to corresponding "styleID"
 				for j in range(len(products)):
 					style_id = products[j]['styleid']
 					best_price_link = "https://www.myntra.com/web/offers/"+str(style_id)
 					#print("Best price link created: "+str(best_price_link))
 					req = Request(best_price_link, headers={'User-Agent': 'Mozilla/5.0'})
 					response_price_json = json.loads(urlopen(req).read().decode('utf-8'))
+					# "bestPrice" is added to product being iterated
 					products[j].update(response_price_json)
 					#print(data[i]["bestPrice"]["price"]["discounted"])
 				#pbar2.update()
+				# finally "Data" is added as JSON in the list
 				data.append(response_webpage)
 				print("All Data including Best Price for "+str(len(products))+" products added to main data list for page: "+str(i+1))
 				logger.info("All Data including Best Price for "+str(len(products))+" products added to main data list for page: "+str(i+1))
@@ -84,44 +84,42 @@ try:
 			pbar.update(100)
 			print("-------------------------------------------------------------------------------")
 		#return data
-	
-	# Auxiliary function for ThreadPool (Not in Use)
-	def foo(data):
-		return web_scraper(data, range(4))
-	
+		
 	# Main Driver function
 	if __name__ == '__main__':
-		
-		manager = multiprocessing.Manager()
-		result = manager.list()
-		processes = []
-		cpus = multiprocessing.cpu_count()
-		
-		#api_prefix_link = "https://www.myntra.com/web/v2/search/data/"
+	
 		product_link = ["mens-jeans"]
 		product_loop_limit = [2]
 		start_index = 0
 		end_index = (product_loop_limit[0] // cpus) + 1
 		
+		# =========== Multiprocessing starts here ==========
+		manager = multiprocessing.Manager()
+		result = manager.list()
+		processes = []
+		cpus = multiprocessing.cpu_count()
+		
 		for cpu in range(cpus):
 			process = multiprocessing.Process(target=web_scraper, args=(result, product_link[0], start_index, end_index))
 			process.start()
-			print("Process Name - "+format(process.name))
+			print("Process Created - "+format(process.name))
 			processes.append(process)
 			start_index = end_index
 			end_index += end_index
 			if start_index >= product_loop_limit[0]:
-				print("start_index ========= "+format(start_index))
+				#print("start_index ========= "+format(start_index))
 				break
 		
 		for process in processes:
 			print("Process joining ==== "+format(process))
 			process.join()
+		# =========== Multiprocessing ends here ===========
 		
 		#web_scraper(product_link[0], 0, 2)
 		print("Length of products is ----------------> "+format(len(result[0]["data"]["results"]["products"])))
 		print("Length of products is ----------------> "+format(len(result[1]["data"]["results"]["products"])))
-		'''
+		
+		''' # pooling didn't work properly
 		pool = ThreadPool(4)
 		data = {}
 		results = pool.map(web_scraper, 1)
@@ -131,28 +129,22 @@ try:
 		data = {}
 		results = web_scraper(data)
 		'''
-		results = [x for x in result] # converts ListProxy into pure python list
 		
+		results = [x for x in result] # converts ListProxy into pure python list
 		file_path = 'C:/Users/Alpha/Desktop/'+product_link[0]+'.json'
 		create_JSON_file(file_path, results)
 		#print(data[0]["data"]["results"]["products"][0]["bestPrice"]["price"]["discounted"])
 		print("********************* Execution Successfully Finished *************************")
-		print("Execution time: "+str(time.clock() - start)+" seconds")
+		print("Service Execution time: "+str(time.clock() - start)+" seconds")
 		
 		f = open("C:/Users/Alpha/Desktop/"+product_link[0]+".json", "r")
 		f_data = f.read()
 		json_data = json.loads(f_data)
-		#df = pandas.DataFrame([json_data])
-		#df.to_clipboard(index=False,header=False)
-		#print("Copied to clipboard")
-		#print(format(json_data)[0]["data"]["results"]["products"][0]["bestPrice"]["price"]["discounted"])
-	
-	
-		#main()
 		
 except Exception as e:
-	print("Exception occurred: "+str(e))
+	print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Exception occurred ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ")
+	print(e)
 	traceback.print_exc()
 	logger.exception("Exception occurred on main handler")
 	raise
-	print("Execution time after exception: "+str(time.clock() - start)+" seconds")
+	print("Service Execution time after exception: "+str(time.clock() - start)+" seconds")
